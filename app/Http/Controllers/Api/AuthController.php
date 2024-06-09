@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-// use App\Http\Controllers\Api\BaseController as BaseController;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
-
 class AuthController extends BaseController
 {
-    public function register(Request $request)
+    public function register(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
@@ -21,8 +20,8 @@ class AuthController extends BaseController
             'confirm_password' => 'required|min:6|same:password',
         ]);
 
-        if($validator->fails()){
-            return $this->sendError('Validation Error.', $validator->errors());
+        if ($validator->fails()) {
+            return $this->sendError($validator->errors()->toArray(), 'Validation Error.');
         }
 
         $user = User::create([
@@ -31,58 +30,58 @@ class AuthController extends BaseController
             'password' => Hash::make($request->password),
         ]);
 
-        $success['token'] =  $user->createToken('RestApi')->plainTextToken;
-        $success['name'] =  $user->name;
+        $success['token'] = $user->createToken('RestApi')->plainTextToken;
+        $success['name'] = $user->name;
 
-        return $this->sendResponse($success, 'User register successfully.');
+        return $this->sendResponse($success, 'User registered successfully.');
     }
 
-    public function login(Request $request)
+    public function login(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|max:255',
             'password' => 'required|min:6',
         ]);
 
-        if($validator->fails()){
-            return $this->sendError('Validation Error.', $validator->errors());
+        if ($validator->fails()) {
+            return $this->sendError($validator->errors()->toArray(), 'Validation Error.');
         }
 
-        if(Auth::attempt(['email' => $request->email, 'password' => $request->password])){
+        if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             $user = Auth::user();
-            $success['token'] =  $user->createToken('RestApi')->plainTextToken;
-            $success['name'] =  $user->name;
+            $success['token'] = $user->createToken('RestApi')->plainTextToken;
+            $success['name'] = $user->name;
+            $success['role'] = $user->role;
 
-            return $this->sendResponse($success, 'User login successfully.');
-        }else{
-            return $this->sendError('Unauthorised.', ['error'=>'Unauthorised']);
+            return $this->sendResponse($success, 'User logged in successfully.');
+        } else {
+            return $this->sendError(['error' => 'Unauthorized'], 'Unauthorized.');
         }
     }
 
-    public function logout()
+    public function logout(Request $request): JsonResponse
     {
-        // $request->user()->currentAccessToken()->delete();
-        Auth::user()->tokens()->delete();
+        $request->user()->currentAccessToken()->delete();
 
-        return $this->sendResponse([], 'User logout successfully.');
+        return $this->sendResponse([], 'User logged out successfully.');
     }
 
-    public function profile()
+    public function profile(): JsonResponse
     {
         $user = Auth::user();
 
-        return $this->sendResponse($user, 'User profile successfully.');
+        return $this->sendResponse($user, 'User profile retrieved successfully.');
     }
 
-    public function profileUpdate(Request $request)
+    public function profileUpdate(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,'.Auth::id(),
+            'email' => 'required|email|max:255|unique:users,email,' . Auth::id(),
         ]);
 
-        if($validator->fails()){
-            return $this->sendError('Validation Error.', $validator->errors());
+        if ($validator->fails()) {
+            return $this->sendError($validator->errors()->toArray(), 'Validation Error.');
         }
 
         $user = Auth::user();
@@ -93,7 +92,7 @@ class AuthController extends BaseController
         return $this->sendResponse($user, 'User profile updated successfully.');
     }
 
-    public function passwordUpdate(Request $request)
+    public function passwordUpdate(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'current_password' => 'required',
@@ -101,19 +100,18 @@ class AuthController extends BaseController
             'confirm_password' => 'required|min:6|same:password',
         ]);
 
-        if($validator->fails()){
-            return $this->sendError('Validation Error.', $validator->errors());
+        if ($validator->fails()) {
+            return $this->sendError($validator->errors()->toArray(), 'Validation Error.');
         }
 
-        if(Hash::check($request->current_password, Auth::user()->password)){
-            $user = Auth::user();
+        $user = Auth::user();
+        if (Hash::check($request->current_password, $user->password)) {
             $user->password = Hash::make($request->password);
             $user->save();
 
             return $this->sendResponse($user, 'User password updated successfully.');
-        }else{
-            return $this->sendError('Unauthorised.', ['error'=>'Unauthorised']);
+        } else {
+            return $this->sendError(['error' => 'Unauthorized'], 'Unauthorized.');
         }
     }
-
 }

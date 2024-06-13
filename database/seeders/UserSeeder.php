@@ -19,16 +19,16 @@ class UserSeeder extends Seeder
         $users = [
             [
                 'name' => 'Admin',
-                'email' => 'admin@admin.com',
-                'password' => Hash::make('admin123'),
+                'email' => 'admin@email.com',
+                'password' => Hash::make('12345678'),
                 'phone' => '1234567890',
                 'role' => 'admin',
                 'created_at' => Carbon::now(),
             ],
             [
                 'name' => 'Customer',
-                'email' => 'customer@customer.com',
-                'password' => Hash::make('customer123'),
+                'email' => 'customer@email.com',
+                'password' => Hash::make('12345678'),
                 'phone' => '0987654321',
                 'role' => 'customer',
                 'created_at' => Carbon::now(),
